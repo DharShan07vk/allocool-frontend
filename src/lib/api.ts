@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 // API base configuration
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://127.0.0.1:8000/';
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000,
+  timeout: 15000, // 15 seconds global timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,9 +35,9 @@ export const endpoints = {
   internshipsEnhanced: () => api.get('/api/internships/enhanced'),
   
   // Allocation
-  allocationStart: (config: AllocationConfig) => api.post('/api/allocation/start', config),
-  allocationStatus: () => api.get('/api/allocation/status'),
-  allocationLiveMatches: () => api.get('/api/allocation/live-matches'),
+  allocationStart: (config: AllocationConfig) => api.post('/api/allocation/start', config, { timeout: 5000 }), // Quick start
+  allocationStatus: () => api.get('/api/allocation/status', { timeout: 3000 }), // Faster status checks
+  allocationLiveMatches: () => api.get('/api/allocation/live-matches', { timeout: 3000 }), // Faster live matches
   
   // Results
   allocationsLatest: () => api.get('/api/allocations/latest'),
@@ -49,10 +49,13 @@ export interface DashboardStats {
   total_students: number;
   total_internships: number;
   total_capacity: number;
-  placement_potential: number;
+  placement_potential: string;
   category_distribution: Record<string, number>;
-  skill_demand: Record<string, number>;
-  company_tiers: Record<string, number>;
+  tier_distribution: Record<string, number>;
+  top_preferred_companies: Record<string, number>;
+  top_skills: Record<string, number>;
+  work_mode_distribution: Record<string, number>;
+  location_distribution: Record<string, number>;
 }
 
 export interface Student {
@@ -63,6 +66,9 @@ export interface Student {
   location: string;
   skills: string[];
   preferences: string[];
+  email?: string;
+  education?: string;
+  past_internships?: number;
 }
 
 export interface Internship {
@@ -72,7 +78,13 @@ export interface Internship {
   location: string;
   capacity: number;
   requirements: string[];
-  tier: string;
+  tier?: string;
+  title?: string;
+  skills_required?: string;
+  work_mode?: string;
+  stipend?: number;
+  duration_months?: number;
+  company_tier?: string;
 }
 
 export interface AllocationConfig {
@@ -84,11 +96,17 @@ export interface AllocationConfig {
 }
 
 export interface AllocationStatus {
-  status: 'idle' | 'loading' | 'similarity' | 'prediction' | 'optimization' | 'completed' | 'error';
+  running: boolean;
   progress: number;
   stage: string;
   message: string;
-  estimated_time_remaining?: number;
+  result?: any;
+  start_time?: number;
+  estimated_time?: number;
+  allocated_count?: number;
+  total_students?: number;
+  current_matches?: any;
+  stage_details?: any;
 }
 
 export interface AllocationMatch {
