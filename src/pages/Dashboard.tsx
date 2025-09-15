@@ -19,6 +19,7 @@ export function Dashboard() {
   if (error) {
     return (
       <div className="p-6">
+        error
         <Card className="border-destructive">
           <CardContent className="p-6">
             <div className="text-center text-destructive">
@@ -72,11 +73,11 @@ export function Dashboard() {
         />
         <StatCard
           title="Placement Potential"
-          value={data?.placement_potential}
+          value={typeof data?.placement_potential === 'string' ? data.placement_potential : `${data?.placement_potential}%`}
           icon={TrendingUp}
           isLoading={isLoading}
           color="text-orange-600"
-          suffix="%"
+          suffix=""
         />
       </div>
 
@@ -88,7 +89,7 @@ export function Dashboard() {
 
 interface StatCardProps {
   title: string;
-  value?: number;
+  value?: number | string;
   icon: React.ComponentType<any>;
   isLoading: boolean;
   color: string;
@@ -107,7 +108,7 @@ function StatCard({ title, value, icon: Icon, isLoading, color, suffix = '' }: S
           <Skeleton className="h-7 w-20" />
         ) : (
           <div className="text-2xl font-bold">
-            {value?.toLocaleString()}{suffix}
+            {typeof value === 'string' ? value : value?.toLocaleString()}{suffix}
           </div>
         )}
         <p className="text-xs text-muted-foreground mt-1">
