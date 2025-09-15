@@ -11,9 +11,15 @@ export function Results() {
   const { data: results, isLoading, error } = useQuery({
     queryKey: ['allocations-latest'],
     queryFn: async () => {
-      const response = await endpoints.allocationsLatest();
-      return response.data as AllocationResult;
+      try {
+        const response = await endpoints.allocationsLatest();
+        return response.data as AllocationResult;
+      } catch (error) {
+        console.error('Failed to fetch allocation results:', error);
+        throw error;
+      }
     },
+    retry: 1, // Only retry once to avoid infinite loops
   });
 
   const handleDownloadAllocations = async () => {
@@ -98,31 +104,31 @@ export function Results() {
             </CardContent>
           </Card>
         </div>
-      ) : results ? (
+      ) : results?.summary ? (
         <>
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <SummaryCard
               title="Placement Rate"
-              value={`${(results.summary.placement_rate * 100).toFixed(1)}%`}
+              value={`${((results.summary.placement_rate || 0) * 100).toFixed(1)}%`}
               icon={TrendingUp}
               color="text-green-600"
             />
             <SummaryCard
               title="Total Allocated"
-              value={results.summary.total_allocated.toLocaleString()}
+              value={(results.summary.total_allocated || 0).toLocaleString()}
               icon={Users}
               color="text-blue-600"
             />
             <SummaryCard
               title="Avg Similarity"
-              value={`${(results.summary.avg_similarity * 100).toFixed(1)}%`}
+              value={`${((results.summary.avg_similarity || 0) * 100).toFixed(1)}%`}
               icon={BarChart3}
               color="text-purple-600"
             />
             <SummaryCard
               title="Fairness Index"
-              value={results.summary.fairness_index.toFixed(2)}
+              value={(results.summary.fairness_index || 0).toFixed(2)}
               icon={Award}
               color="text-orange-600"
             />
@@ -133,7 +139,7 @@ export function Results() {
             <CardHeader>
               <CardTitle className="text-xl">Detailed Allocation Results</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {results.matches.length} students allocated to internships
+                {results?.matches?.length || 0} students allocated to internships
               </p>
             </CardHeader>
             <CardContent>
@@ -149,7 +155,7 @@ export function Results() {
                     </tr>
                   </thead>
                   <tbody>
-                    {results.matches.map((match, index) => (
+                    {(results?.matches || []).map((match, index) => (
                       <tr key={index} className="border-b hover:bg-muted/50 transition-colors">
                         <td className="py-3 px-4 font-medium">{match.student_name}</td>
                         <td className="py-3 px-4">{match.company}</td>
@@ -176,6 +182,16 @@ export function Results() {
             </CardContent>
           </Card>
         </>
+      ) : results && !results.summary ? (
+        <Card className="border-warning">
+          <CardContent className="p-6">
+            <div className="text-center text-warning">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">Incomplete Results Data</h3>
+              <p className="text-sm">The allocation results are incomplete or in an unexpected format.</p>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardContent className="p-12">
