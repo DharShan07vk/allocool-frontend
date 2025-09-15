@@ -4,13 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Moon, Sun, Activity, Wifi, WifiOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { endpoints } from '@/lib/api';
+import { NotificationCenter } from '@/components/ui/notification-center';
+import { SearchCommand } from '@/components/features/search-command';
 
 interface HeaderProps {
   darkMode: boolean;
   setDarkMode: (darkMode: boolean) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 }
 
-export function Header({ darkMode, setDarkMode }: HeaderProps) {
+export function Header({ darkMode, setDarkMode, activeTab, setActiveTab }: HeaderProps) {
   const { data: healthData, isError: healthError } = useQuery({
     queryKey: ['health'],
     queryFn: endpoints.health,
@@ -49,19 +53,24 @@ export function Header({ darkMode, setDarkMode }: HeaderProps) {
             </Badge>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDarkMode(!darkMode)}
-              className="rounded-full"
-            >
-              {darkMode ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
+          <div className="flex items-center space-x-4">
+            <SearchCommand activeTab={activeTab} setActiveTab={setActiveTab} />
+            
+            <div className="flex items-center space-x-2">
+              <NotificationCenter />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDarkMode(!darkMode)}
+                className="rounded-full"
+              >
+                {darkMode ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

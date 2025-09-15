@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { endpoints, DashboardStats } from '@/lib/api';
 import { Users, Building2, Target, TrendingUp, PieChart, BarChart } from 'lucide-react';
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts';
+import { StatsCard } from '@/components/features/stats-cards';
+import { RealtimeIndicator } from '@/components/features/realtime-indicator';
 
 export function Dashboard() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, dataUpdatedAt } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const response = await endpoints.dashboardStats();
@@ -43,42 +45,65 @@ export function Dashboard() {
             Overview of the internship allocation system
           </p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          Live Data
-        </Badge>
+        <RealtimeIndicator 
+          isConnected={!error}
+          lastUpdated={new Date(dataUpdatedAt)}
+          isRefreshing={isLoading}
+        />
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Students"
-          value={data?.total_students}
-          icon={Users}
-          isLoading={isLoading}
-          color="text-blue-600"
-        />
-        <StatCard
-          title="Total Internships"
-          value={data?.total_internships}
-          icon={Building2}
-          isLoading={isLoading}
-          color="text-green-600"
-        />
-        <StatCard
-          title="Total Capacity"
-          value={data?.total_capacity}
-          icon={Target}
-          isLoading={isLoading}
-          color="text-purple-600"
-        />
-        <StatCard
-          title="Placement Potential"
-          value={typeof data?.placement_potential === 'string' ? data.placement_potential : `${data?.placement_potential}%`}
-          icon={TrendingUp}
-          isLoading={isLoading}
-          color="text-orange-600"
-          suffix=""
-        />
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="card-elevated">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-7 w-20" />
+                <Skeleton className="h-3 w-16 mt-1" />
+              </CardContent>
+            </Card>
+          ))
+        ) : data ? (
+          <>
+            <StatsCard
+              title="Total Students"
+              value={data.total_students || 0}
+              change={12}
+              changeLabel="from last week"
+              icon={Users}
+              color="text-blue-600"
+            />
+            <StatsCard
+              title="Total Internships"
+              value={data.total_internships || 0}
+              change={5}
+              changeLabel="new this month"
+              icon={Building2}
+              color="text-green-600"
+            />
+            <StatsCard
+              title="Total Capacity"
+              value={data.total_capacity || 0}
+              change={-2}
+              changeLabel="vs last month"
+              icon={Target}
+              color="text-purple-600"
+            />
+            <StatsCard
+              title="Placement Potential"
+              value={typeof data?.placement_potential === 'string' ? data.placement_potential : `${data?.placement_potential || 0}%`}
+              change={8}
+              changeLabel="improvement"
+              icon={TrendingUp}
+              color="text-orange-600"
+              format="percentage"
+            />
+          </>
+        ) : null}
       </div>
 
       {/* Charts */}

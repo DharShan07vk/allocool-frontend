@@ -63,7 +63,12 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="min-h-screen bg-background">
-          <Header darkMode={darkMode} setDarkMode={setDarkMode} />
+          <Header 
+            darkMode={darkMode} 
+            setDarkMode={setDarkMode}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
           <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
           <main className="container mx-auto">
             {renderActiveTab()}
