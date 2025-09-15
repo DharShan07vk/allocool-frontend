@@ -17,13 +17,28 @@ export function Students() {
     queryKey: ['students-enhanced'],
     queryFn: async () => {
       const response = await endpoints.studentsEnhanced();
-      return response.data as Student[];
+      const rawStudents = response.data.students || [];
+      
+      // Transform the data to ensure skills and preferences are arrays
+      return rawStudents.map((student: any) => ({
+        ...student,
+        skills: typeof student.skills === 'string' 
+          ? student.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : Array.isArray(student.skills) ? student.skills : [],
+        preferences: typeof student.preferred_companies === 'string'
+          ? student.preferred_companies.split(',').map((p: string) => p.trim()).filter(Boolean)
+          : Array.isArray(student.preferred_companies) ? student.preferred_companies
+          : typeof student.preferences === 'string'
+          ? student.preferences.split(',').map((p: string) => p.trim()).filter(Boolean)
+          : Array.isArray(student.preferences) ? student.preferences : []
+      })) as Student[];
     },
   });
 
   const filteredStudents = students.filter((student) => {
+    const skillsArray = Array.isArray(student.skills) ? student.skills : [];
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+                         skillsArray.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = !categoryFilter || student.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -43,8 +58,8 @@ export function Students() {
         student.category,
         student.gpa,
         student.location,
-        student.skills.join('; '),
-        student.preferences.join('; ')
+        Array.isArray(student.skills) ? student.skills.join('; ') : '',
+        Array.isArray(student.preferences) ? student.preferences.join('; ') : ''
       ].join(','))
     ].join('\n');
 
@@ -167,14 +182,19 @@ export function Students() {
                 <div className="mt-4">
                   <p className="text-sm font-medium mb-2">Skills:</p>
                   <div className="flex flex-wrap gap-1">
-                    {student.skills.slice(0, 3).map((skill, index) => (
+                    {Array.isArray(student.skills) && student.skills.slice(0, 3).map((skill, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {skill}
                       </Badge>
                     ))}
-                    {student.skills.length > 3 && (
+                    {Array.isArray(student.skills) && student.skills.length > 3 && (
                       <Badge variant="outline" className="text-xs">
                         +{student.skills.length - 3} more
+                      </Badge>
+                    )}
+                    {!Array.isArray(student.skills) && (
+                      <Badge variant="outline" className="text-xs">
+                        No skills listed
                       </Badge>
                     )}
                   </div>
@@ -183,14 +203,19 @@ export function Students() {
                 <div className="mt-4">
                   <p className="text-sm font-medium mb-2">Preferences:</p>
                   <div className="flex flex-wrap gap-1">
-                    {student.preferences.slice(0, 2).map((pref, index) => (
+                    {Array.isArray(student.preferences) && student.preferences.slice(0, 2).map((pref, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {pref}
                       </Badge>
                     ))}
-                    {student.preferences.length > 2 && (
+                    {Array.isArray(student.preferences) && student.preferences.length > 2 && (
                       <Badge variant="outline" className="text-xs">
                         +{student.preferences.length - 2} more
+                      </Badge>
+                    )}
+                    {!Array.isArray(student.preferences) && (
+                      <Badge variant="outline" className="text-xs">
+                        No preferences listed
                       </Badge>
                     )}
                   </div>
