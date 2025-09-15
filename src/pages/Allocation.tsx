@@ -25,65 +25,115 @@ export function Allocation() {
   const queryClient = useQueryClient();
 
   // Query allocation status
-  const { data: status } = useQuery({
+  const { data: status, error: statusError, isError: statusIsError } = useQuery({
     queryKey: ['allocation-status'],
     queryFn: async () => {
-      const response = await endpoints.allocationStatus();
-      return response.data as AllocationStatus;
+      try {
+        const response = await endpoints.allocationStatus();
+        return response.data as AllocationStatus;
+      } catch (error: any) {
+        // If it's a timeout error during polling, we'll retry
+        if (error.code === 'ECONNABORTED' && isRunning) {
+          console.warn('Status polling timeout, will retry...');
+          throw error; // Let retry mechanism handle it
+        }
+        throw error;
+      }
     },
     enabled: isRunning,
+    retry: (failureCount, error: any) => {
+      // More aggressive retry for timeouts during running process
+      if (error?.code === 'ECONNABORTED' && failureCount < 5) {
+        return true;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff, max 5s
   });
 
   // Query live matches
-  const { data: liveMatches = [] } = useQuery({
+  const { data: liveMatchesResponse = {} } = useQuery({
     queryKey: ['allocation-live-matches'],
     queryFn: async () => {
-      const response = await endpoints.allocationLiveMatches();
-      return response.data as AllocationMatch[];
+      try {
+        const response = await endpoints.allocationLiveMatches();
+        return response.data;
+      } catch (error: any) {
+        // Silently fail live matches if there are connection issues
+        if (error.code === 'ECONNABORTED') {
+          console.warn('Live matches timeout, skipping...');
+          return { current_matches: [] };
+        }
+        throw error;
+      }
     },
-    enabled: isRunning && (status?.status === 'optimization' || status?.status === 'completed'),
+    enabled: isRunning && status?.progress > 50,
+    retry: 1,
+    retryDelay: 2000,
   });
+
+  // Extract live matches from response
+  const liveMatches = Array.isArray(liveMatchesResponse?.current_matches) 
+    ? liveMatchesResponse.current_matches 
+    : [];
 
   // Start allocation mutation
   const startAllocation = useMutation({
-    mutationFn: (config: AllocationConfig) => endpoints.allocationStart(config),
+    mutationFn: async (config: AllocationConfig) => {
+      try {
+        const response = await endpoints.allocationStart(config);
+        return response.data;
+      } catch (error: any) {
+        // Handle specific timeout errors
+        if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timeout - please check if the backend is processing your request');
+        }
+        throw error;
+      }
+    },
     onSuccess: () => {
       setIsRunning(true);
       toast.success('Allocation process started successfully');
     },
-    onError: (error) => {
-      toast.error('Failed to start allocation process');
+    onError: (error: any) => {
+      const errorMessage = error.message || 'Failed to start allocation process';
+      toast.error(errorMessage);
       console.error('Allocation start error:', error);
+      setIsRunning(false);
     },
   });
 
   // Polling for status updates
   usePolling(
     async () => {
-      if (isRunning) {
-        await queryClient.invalidateQueries({ queryKey: ['allocation-status'] });
-        if (status?.status === 'optimization' || status?.status === 'completed') {
-          await queryClient.invalidateQueries({ queryKey: ['allocation-live-matches'] });
+      if (isRunning && !statusIsError) {
+        try {
+          await queryClient.invalidateQueries({ queryKey: ['allocation-status'] });
+          if (status?.progress > 50) {
+            await queryClient.invalidateQueries({ queryKey: ['allocation-live-matches'] });
+          }
+        } catch (error) {
+          console.warn('Polling update failed, will retry on next interval');
         }
       }
     },
     {
-      interval: 1000, // Poll every second
+      interval: 3000, // Poll every 3 seconds with faster timeout
       enabled: isRunning,
     }
   );
 
   // Stop polling when allocation is completed or failed
   useEffect(() => {
-    if (status?.status === 'completed' || status?.status === 'error') {
+    if (status && !status.running) {
       setIsRunning(false);
-      if (status.status === 'completed') {
+      if (status.progress >= 100) {
         toast.success('Allocation process completed successfully');
       } else {
-        toast.error('Allocation process failed');
+        toast.error('Allocation process failed or stopped');
       }
     }
-  }, [status?.status]);
+  }, [status?.running, status?.progress]);
 
   const handleStart = () => {
     startAllocation.mutate(config);
@@ -96,21 +146,26 @@ export function Allocation() {
 
   const getStageProgress = () => {
     if (!status) return 0;
-    
-    const stages = ['idle', 'loading', 'similarity', 'prediction', 'optimization', 'completed'];
-    const currentIndex = stages.indexOf(status.status);
-    return currentIndex >= 0 ? (currentIndex / (stages.length - 1)) * 100 : 0;
+    return status.progress || 0;
   };
 
   const getStageColor = (stage: string) => {
     if (!status) return 'text-muted-foreground';
     
-    const stages = ['loading', 'similarity', 'prediction', 'optimization', 'completed'];
-    const currentIndex = stages.indexOf(status.status);
-    const stageIndex = stages.indexOf(stage);
+    // Map stage names to progress ranges
+    const stageProgress = {
+      'loading': 0,
+      'similarity': 25,
+      'prediction': 50,
+      'optimization': 75,
+      'completed': 100
+    };
     
-    if (stageIndex < currentIndex) return 'text-success';
-    if (stageIndex === currentIndex) return 'text-primary';
+    const currentProgress = status.progress || 0;
+    const stageThreshold = stageProgress[stage as keyof typeof stageProgress] || 0;
+    
+    if (currentProgress > stageThreshold) return 'text-success';
+    if (currentProgress >= stageThreshold - 10) return 'text-primary';
     return 'text-muted-foreground';
   };
 
@@ -126,7 +181,12 @@ export function Allocation() {
         </div>
         <Badge variant={isRunning ? "default" : "outline"} className="flex items-center space-x-1">
           <Brain className="h-3 w-3" />
-          <span>{isRunning ? 'Running' : 'Idle'}</span>
+          <span>
+            {isRunning ? (
+              statusIsError ? 'Connection Issues' : 
+              status?.running ? 'Running' : 'Finishing...'
+            ) : 'Idle'}
+          </span>
         </Badge>
       </div>
 
@@ -241,6 +301,36 @@ export function Allocation() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {statusError && statusIsError && isRunning && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">
+                  ⚠️ Temporary connection issues. The allocation is likely still running.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Status updates will resume automatically when connection is restored.
+                </p>
+                <div className="flex space-x-2 mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ['allocation-status'] });
+                      toast('Attempting to reconnect...', { icon: '🔄' });
+                    }}
+                  >
+                    Retry Now
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setIsRunning(false)}
+                  >
+                    Stop Monitoring
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             {status ? (
               <>
                 <div className="space-y-2">
@@ -257,9 +347,14 @@ export function Allocation() {
                     {status.stage}
                   </Badge>
                   <p className="text-sm text-muted-foreground">{status.message}</p>
-                  {status.estimated_time_remaining && (
+                  {status.estimated_time && (
                     <p className="text-xs text-muted-foreground">
-                      Estimated time remaining: {status.estimated_time_remaining}s
+                      Estimated time: {status.estimated_time}s
+                    </p>
+                  )}
+                  {status.total_students && (
+                    <p className="text-xs text-muted-foreground">
+                      Processing {status.total_students} students
                     </p>
                   )}
                 </div>
