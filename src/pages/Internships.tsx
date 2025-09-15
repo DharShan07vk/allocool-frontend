@@ -17,7 +17,20 @@ export function Internships() {
     queryKey: ['internships-enhanced'],
     queryFn: async () => {
       const response = await endpoints.internshipsEnhanced();
-      return response.data as Internship[];
+      const rawInternships = response.data.internships || [];
+      
+      // Transform the data to ensure requirements are arrays
+      return rawInternships.map((internship: any) => ({
+        ...internship,
+        position: internship.title || internship.position || 'Unknown Position',
+        tier: internship.company_tier || internship.tier || 'Unknown Tier',
+        requirements: typeof internship.skills_required === 'string'
+          ? internship.skills_required.split(',').map((r: string) => r.trim()).filter(Boolean)
+          : Array.isArray(internship.skills_required) ? internship.skills_required
+          : typeof internship.requirements === 'string'
+          ? internship.requirements.split(',').map((r: string) => r.trim()).filter(Boolean)
+          : Array.isArray(internship.requirements) ? internship.requirements : []
+      })) as Internship[];
     },
   });
 
@@ -43,8 +56,8 @@ export function Internships() {
         internship.position,
         internship.location,
         internship.capacity,
-        internship.tier,
-        internship.requirements.join('; ')
+        internship.tier || 'Unknown',
+        Array.isArray(internship.requirements) ? internship.requirements.join('; ') : ''
       ].join(','))
     ].join('\n');
 
@@ -58,12 +71,23 @@ export function Internships() {
     toast.success('Internships data exported successfully');
   };
 
-  const getTierColor = (tier: string) => {
+  const getTierColor = (tier: string | undefined | null) => {
+    if (!tier) return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+    
     switch (tier.toLowerCase()) {
-      case 'tier 1': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'tier 2': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'tier 3': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+      case 'tier 1': 
+      case 'tier 1 - tech giants':
+      case 'tier 1 - indian it':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'tier 2':
+      case 'tier 2 - startups': 
+      case 'tier 2 - finance':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'tier 3':
+      case 'tier 3 - consulting':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      default: 
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
   };
 
@@ -163,7 +187,7 @@ export function Internships() {
                     <p className="text-sm text-muted-foreground">{internship.position}</p>
                   </div>
                   <Badge className={getTierColor(internship.tier)}>
-                    {internship.tier}
+                    {internship.tier || 'Unknown Tier'}
                   </Badge>
                 </div>
                 
@@ -181,14 +205,19 @@ export function Internships() {
                 <div className="mt-4">
                   <p className="text-sm font-medium mb-2">Requirements:</p>
                   <div className="flex flex-wrap gap-1">
-                    {internship.requirements.slice(0, 3).map((req, index) => (
+                    {Array.isArray(internship.requirements) && internship.requirements.slice(0, 3).map((req, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {req}
                       </Badge>
                     ))}
-                    {internship.requirements.length > 3 && (
+                    {Array.isArray(internship.requirements) && internship.requirements.length > 3 && (
                       <Badge variant="outline" className="text-xs">
                         +{internship.requirements.length - 3} more
+                      </Badge>
+                    )}
+                    {!Array.isArray(internship.requirements) && (
+                      <Badge variant="outline" className="text-xs">
+                        No requirements listed
                       </Badge>
                     )}
                   </div>
