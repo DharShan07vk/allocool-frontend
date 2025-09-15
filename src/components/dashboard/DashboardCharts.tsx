@@ -47,11 +47,11 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
 
   // Skills Demand Chart
   const skillsData = {
-    labels: Object.keys(data.skill_demand || {}),
+    labels: Object.keys(data.top_skills || {}),
     datasets: [
       {
         label: 'Demand Count',
-        data: Object.values(data.skill_demand || {}),
+        data: Object.values(data.top_skills || {}),
         backgroundColor: 'hsl(238, 75%, 71%)',
         borderColor: 'hsl(238, 75%, 71%)',
         borderWidth: 1,
@@ -62,10 +62,10 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
 
   // Company Tiers Chart
   const tiersData = {
-    labels: Object.keys(data.company_tiers || {}),
+    labels: Object.keys(data.tier_distribution || {}),
     datasets: [
       {
-        data: Object.values(data.company_tiers || {}),
+        data: Object.values(data.tier_distribution || {}),
         backgroundColor: [
           'hsl(142, 76%, 36%)',
           'hsl(38, 92%, 50%)',
@@ -122,7 +122,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
 
       <Card className="card-elevated">
         <CardHeader>
-          <CardTitle className="text-lg">Skills Demand</CardTitle>
+          <CardTitle className="text-lg">Top Skills</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-64">
