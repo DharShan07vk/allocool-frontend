@@ -31,7 +31,7 @@ export function Header({ darkMode, setDarkMode, activeTab, setActiveTab }: Heade
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Activity className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold ">
                 Internship Allocation Engine
               </h1>
             </div>
