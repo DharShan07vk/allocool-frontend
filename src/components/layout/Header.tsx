@@ -54,10 +54,7 @@ export function Header({ darkMode, setDarkMode, activeTab, setActiveTab }: Heade
           </div>
           
           <div className="flex items-center space-x-4">
-            <SearchCommand activeTab={activeTab} setActiveTab={setActiveTab} />
-            
             <div className="flex items-center space-x-2">
-              <NotificationCenter />
               <Button
                 variant="ghost"
                 size="icon"

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { endpoints, AllocationConfig, AllocationStatus, AllocationMatch } from '@/lib/api';
 import { usePolling } from '@/hooks/usePolling';
+import { AllocationAnimation } from '@/components/features/allocation-animation';
 import { Play, Square, Settings, Brain, Users, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -93,7 +94,13 @@ export function Allocation() {
     },
     onSuccess: () => {
       setIsRunning(true);
-      toast.success('Allocation process started successfully');
+      toast.success('🚀 Allocation engine started!', {
+        style: {
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          color: 'white',
+          border: 'none'
+        }
+      });
     },
     onError: (error: any) => {
       const errorMessage = error.message || 'Failed to start allocation process';
@@ -128,9 +135,26 @@ export function Allocation() {
     if (status && !status.running) {
       setIsRunning(false);
       if (status.progress >= 100) {
-        toast.success('Allocation process completed successfully');
-      } else {
-        toast.error('Allocation process failed or stopped');
+        // Success celebration
+        toast.success(' Allocation completed successfully!', {
+          duration: 4000,
+          style: {
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: 'white',
+            border: 'none'
+          }
+        });
+        
+        // Trigger confetti or celebration effect
+        setTimeout(() => {
+          toast(' All students have been matched to internships!', {
+            duration: 3000
+          });
+        }, 1000);
+      } else if (status.progress > 0) {
+        toast.error(' Allocation process encountered an error', {
+          duration: 4000
+        });
       }
     }
   }, [status?.running, status?.progress]);
@@ -141,7 +165,13 @@ export function Allocation() {
 
   const handleStop = () => {
     setIsRunning(false);
-    toast('Allocation process stopped', { icon: '⏹️' });
+    toast('⏹️ Allocation monitoring stopped', { 
+      duration: 2000,
+      style: {
+        background: '#f59e0b',
+        color: 'white'
+      }
+    });
   };
 
   const getStageProgress = () => {
@@ -185,7 +215,7 @@ export function Allocation() {
             {isRunning ? (
               statusIsError ? 'Connection Issues' : 
               status?.running ? 'Running' : 'Finishing...'
-            ) : 'Idle'}
+            ) : status?.progress === 100 ? 'Completed' : 'Ready'}
           </span>
         </Badge>
       </div>
@@ -333,6 +363,15 @@ export function Allocation() {
             
             {status ? (
               <>
+                {/* Allocation Animation */}
+                <AllocationAnimation
+                  stage={status.stage}
+                  progress={getStageProgress()}
+                  isRunning={isRunning && status.running}
+                  isCompleted={status.progress >= 100 && !status.running}
+                  isFailed={!status.running && status.progress < 100 && status.progress > 0}
+                />
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Overall Progress</span>
@@ -359,25 +398,6 @@ export function Allocation() {
                   )}
                 </div>
 
-                {/* Stage Indicators */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">Stages</h3>
-                  <div className="space-y-2">
-                    {['loading', 'similarity', 'prediction', 'optimization', 'completed'].map((stage, index) => (
-                      <div key={stage} className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          getStageColor(stage) === 'text-success' ? 'bg-success' :
-                          getStageColor(stage) === 'text-primary' ? 'bg-primary animate-pulse' :
-                          'bg-muted'
-                        }`} />
-                        <span className={`text-sm capitalize ${getStageColor(stage)}`}>
-                          {stage.replace('_', ' ')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Live Matches Preview */}
                 {liveMatches.length > 0 && (
                   <div className="space-y-3">
@@ -387,7 +407,7 @@ export function Allocation() {
                     </h3>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {liveMatches.slice(0, 5).map((match, index) => (
-                        <div key={index} className="p-3 bg-muted rounded-lg text-sm">
+                        <div key={index} className="p-3 bg-muted rounded-lg text-sm animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
                           <div className="font-medium">{match.student_name}</div>
                           <div className="text-muted-foreground">
                             {match.company} - {match.position}
@@ -408,11 +428,13 @@ export function Allocation() {
                 )}
               </>
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No allocation process running</p>
-                <p className="text-sm">Configure settings and start allocation to see progress</p>
-              </div>
+              <AllocationAnimation
+                stage=""
+                progress={0}
+                isRunning={false}
+                isCompleted={false}
+                isFailed={false}
+              />
             )}
           </CardContent>
         </Card>

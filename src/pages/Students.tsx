@@ -201,7 +201,7 @@ export function Students() {
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-sm font-medium mb-2">Preferences:</p>
+                  <p className="text-sm font-medium mb-2">Applied:</p>
                   <div className="flex flex-wrap gap-1">
                     {Array.isArray(student.preferences) && student.preferences.slice(0, 2).map((pref, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
