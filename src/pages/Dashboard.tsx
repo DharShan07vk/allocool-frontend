@@ -36,20 +36,16 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in-up">
-      {/* Header */}
+    <div className="p-6 space-y-6" id="dashboard-content">
+      {/* Header with Download Button */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
-            Overview of the internship allocation system
+            Overview of internship allocations and statistics
           </p>
         </div>
-        <RealtimeIndicator 
-          isConnected={!error}
-          lastUpdated={new Date(dataUpdatedAt)}
-          isRefreshing={isLoading}
-        />
+        
       </div>
 
       {/* Stats Cards */}

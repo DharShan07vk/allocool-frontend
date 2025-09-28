@@ -25,12 +25,12 @@ export function Header({ darkMode, setDarkMode, activeTab, setActiveTab }: Heade
   const isHealthy = !healthError && healthData?.status === 200;
 
   return (
-    <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b bg-card/50 backdrop-blur-sm top-0 z-50">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Activity className="h-8 w-8 text-primary" />
+
               <h1 className="text-2xl font-bold ">
                 Internship Allocation Engine
               </h1>
