@@ -79,14 +79,30 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    devicePixelRatio: 2, // Ensures crisp rendering
     plugins: {
       legend: {
         position: 'bottom' as const,
         labels: {
           padding: 20,
           usePointStyle: true,
+          font: {
+            size: 18,
+            family: 'system-ui, -apple-system, sans-serif',
+          },
         },
       },
+      tooltip: {
+        titleFont: {
+          family: 'system-ui, -apple-system, sans-serif',
+        },
+        bodyFont: {
+          family: 'system-ui, -apple-system, sans-serif',
+        },
+      },
+    },
+    animation: {
+      duration: 0, // Disable animations for crisp screenshots
     },
   };
 
@@ -98,10 +114,23 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         grid: {
           color: 'hsl(var(--border))',
         },
+        ticks: {
+          font: {
+            size: 20,
+            family: 'system-ui, -apple-system, sans-serif',
+          },
+        },
       },
       x: {
         grid: {
           display: false,
+        },
+        ticks: {
+          font: {
+            size: 15,
+            color: 'rgb(255, 99, 71)',
+            family: 'system-ui, -apple-system, sans-serif',
+          },
         },
       },
     },
@@ -109,34 +138,34 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <Card className="card-elevated">
+      <Card className="border bg-card shadow-sm" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         <CardHeader>
-          <CardTitle className="text-lg">Category Distribution</CardTitle>
+          <CardTitle className="text-lg font-semibold antialiased">Category Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-64" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
             <Doughnut data={categoryData} options={chartOptions} />
           </div>
         </CardContent>
       </Card>
 
-      <Card className="card-elevated">
+      <Card className="border bg-card shadow-sm" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         <CardHeader>
-          <CardTitle className="text-lg">Top Skills</CardTitle>
+          <CardTitle className="text-lg font-semibold antialiased">Top Skills</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-64 text-sm text-black" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
             <Bar data={skillsData} options={barOptions} />
           </div>
         </CardContent>
       </Card>
 
-      <Card className="card-elevated">
+      <Card className="border bg-card shadow-sm" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         <CardHeader>
-          <CardTitle className="text-lg">Company Tiers</CardTitle>
+          <CardTitle className="text-lg font-semibold antialiased">Company Tiers</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-64" style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
             <Doughnut data={tiersData} options={chartOptions} />
           </div>
         </CardContent>

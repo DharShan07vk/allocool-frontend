@@ -233,3 +233,36 @@ All colors MUST be HSL.
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Add these styles for better dark mode screenshot support */
+
+/* Ensure dark theme elements maintain their colors in screenshots */
+.dark #allocation-content,
+.dark #dashboard-content {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.dark .card-elevated {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+/* Force background colors for screenshot capture */
+[data-theme="dark"] *,
+.dark * {
+  color-scheme: dark;
+}
+
+/* Ensure proper contrast in dark mode screenshots */
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .bg-muted {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .border {
+  border-color: hsl(var(--border)) !important;
+}
